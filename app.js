@@ -399,14 +399,70 @@
     renderList();
   }
 
-  // ── Init ──────────────────────────────────────────────────
-  const mobileToggle = document.getElementById('mobile-toggle');
+  // ── Mobile Draggable Bottom Sheet ────────────────────────
   const sidebar = document.getElementById('sidebar');
-  if (mobileToggle && sidebar) {
-    mobileToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('active');
-      const isExpanded = sidebar.classList.contains('active');
-      mobileToggle.querySelector('.toggle-text').textContent = isExpanded ? 'Close List' : 'View List';
+  const dragHandle = document.querySelector('.drag-handle');
+  
+  if (sidebar && dragHandle) {
+    let startY = 0;
+    let startTranslateY = 0;
+    let isDragging = false;
+    
+    // Percentages of window height
+    const getSheetStates = () => {
+      const h = window.innerHeight;
+      return {
+        collapsed: h - 48,
+        expanded: h * 0.35, // 65% height
+        full: 0
+      };
+    };
+
+    const setSheetPos = (y, animate = false) => {
+      sidebar.style.transition = animate ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
+      sidebar.style.transform = `translateY(${y}px)`;
+    };
+
+    dragHandle.addEventListener('touchstart', (e) => {
+      if (window.innerWidth > 768) return;
+      isDragging = true;
+      startY = e.touches[0].clientY;
+      
+      // Get current translation from style or computed
+      const transform = window.getComputedStyle(sidebar).transform;
+      const matrix = new WebKitCSSMatrix(transform);
+      startTranslateY = matrix.m42;
+      
+      setSheetPos(startTranslateY, false);
+      e.preventDefault(); // Prevent scroll/refresh
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      const newY = Math.max(0, startTranslateY + deltaY);
+      setSheetPos(newY, false);
+      e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      
+      const transform = window.getComputedStyle(sidebar).transform;
+      const matrix = new WebKitCSSMatrix(transform);
+      const endY = matrix.m42;
+      
+      const states = getSheetStates();
+      
+      // Snap to closest state
+      let closest = states.collapsed;
+      if (Math.abs(endY - states.expanded) < Math.abs(endY - closest)) closest = states.expanded;
+      if (Math.abs(endY - states.full) < Math.abs(endY - closest)) closest = states.full;
+      
+      setSheetPos(closest, true);
+      sidebar.classList.toggle('active', closest < states.collapsed);
     });
   }
 

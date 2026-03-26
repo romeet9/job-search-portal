@@ -281,24 +281,24 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
   position: fixed; bottom: 20px; right: 20px;
   width: 54px; height: 54px; border-radius: 50%;
   background: var(--surface2); backdrop-filter: blur(12px);
-  border: 1px solid var(--border); color: var(--text-primary);
+  border: 1px solid var(--border); color: #fff;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 3000;
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-#refresh-btn:active { transform: scale(0.9); }
-#refresh-btn svg { width: 24px; height: 24px; transition: transform 0.6s ease; }
-
-/* Luxury Backdrop Blur Overlay */
-#backdrop-blur {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.2);
-  backdrop-filter: blur(0px); z-index: 1500;
-  pointer-events: none; opacity: 0;
   transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-#sidebar.active ~ #backdrop-blur {
-  backdrop-filter: blur(12px); opacity: 1; pointer-events: auto;
+#refresh-btn:hover { background: var(--accent); color: #fff; }
+#refresh-btn:active { transform: scale(0.9); }
+#refresh-btn svg { width: 22px; height: 22px; stroke: currentColor; transition: transform 0.6s ease; }
+
+#backdrop-blur {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.1);
+  backdrop-filter: blur(0px); z-index: 1500;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sidebar-active #backdrop-blur {
+  pointer-events: auto;
 }
 
 /* ── Loading Overlay ────────────────────────────────────────── */
@@ -331,8 +331,7 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
   .leaflet-control-zoom {
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
-  #sidebar.active ~ #map .leaflet-control-zoom,
-  #sidebar.active + #map .leaflet-control-zoom {
+  .sidebar-active .leaflet-control-zoom {
     transform: translateY(-40px) !important;
   }
 
@@ -340,7 +339,7 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
   .leaflet-bottom {
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
-  #sidebar.active ~ #map .leaflet-bottom {
+  .sidebar-active .leaflet-bottom {
     transform: translateY(-50vh) !important;
   }
 
@@ -368,7 +367,7 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
     background: var(--border); border-radius: 4px;
     transition: background 0.3s ease;
   }
-  #sidebar.active .drag-handle::after { background: var(--accent); }
+  .sidebar-active .drag-handle::after { background: var(--accent); }
 
   .sidebar-header { padding: 12px 20px 10px; }
   .logo-wrap { margin-bottom: 8px; }
@@ -378,7 +377,11 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
     top: 16px !important; left: 16px !important; right: auto !important;
     bottom: auto !important; width: auto !important;
     max-width: calc(100% - 32px);
-    flex-direction: column; align-items: flex-start; gap: 6px;
+    flex-direction: column; align-items: flex-start; gap: 8px;
+    z-index: 1000; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sidebar-active #map-stats-container {
+    transform: translateY(-20px); opacity: 0; pointer-events: none;
   }
   
   .stat-pill {

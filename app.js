@@ -426,9 +426,7 @@
   if (backdropBlur) {
     backdropBlur.addEventListener('click', () => {
       if (window.innerWidth > 768) return;
-      const states = getSheetStates();
-      setSheetPos(states.collapsed, true);
-      sidebar.classList.remove('active');
+      setSheetPos(getSheetStates().collapsed, true);
     });
   }
 
@@ -454,6 +452,19 @@
     const setSheetPos = (y, animate = false) => {
       sidebar.style.transition = animate ? 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
       sidebar.style.transform = `translateY(${y}px)`;
+      
+      // Luxury Dynamic Blur & Map Shift
+      const states = getSheetStates();
+      const progress = Math.max(0, Math.min(1, 1 - (y / states.collapsed)));
+      const blurOverlay = document.getElementById('backdrop-blur');
+      if (blurOverlay) {
+        blurOverlay.style.opacity = progress;
+        blurOverlay.style.pointerEvents = progress > 0.1 ? 'auto' : 'none';
+        blurOverlay.style.backdropFilter = `blur(${progress * 12}px)`;
+      }
+      
+      // Sync body class for CSS-only Luxury effects
+      document.body.classList.toggle('sidebar-active', y < states.collapsed - 10);
     };
 
     dragHandle.addEventListener('touchstart', (e) => {
@@ -478,15 +489,6 @@
       // CLAMP: Prevent going below collapsed or above top
       const newY = Math.min(states.collapsed, Math.max(0, startTranslateY + deltaY));
       setSheetPos(newY, false);
-      
-      // Dynamic Blur Effect based on height
-      const progress = 1 - (newY / states.collapsed);
-      const blurOverlay = document.getElementById('backdrop-blur');
-      if (blurOverlay) {
-        blurOverlay.style.opacity = progress;
-        blurOverlay.style.pointerEvents = progress > 0.1 ? 'auto' : 'none';
-      }
-      
       e.preventDefault();
     }, { passive: false });
 
@@ -502,10 +504,9 @@
       
       // Handle Tap on handle: Toggle between states
       if (duration < 250 && Math.abs(endY - startTranslateY) < 15) {
-        const isCollapsed = endY > states.collapsed - 60;
-        const target = isCollapsed ? states.expanded : states.collapsed;
+        const isCurrentlyCollapsed = endY > states.collapsed - 20;
+        const target = isCurrentlyCollapsed ? states.expanded : states.collapsed;
         setSheetPos(target, true);
-        sidebar.classList.toggle('active', target < states.collapsed);
         return;
       }
       
@@ -515,7 +516,6 @@
       if (Math.abs(endY - states.full) < Math.abs(endY - closest)) closest = states.full;
       
       setSheetPos(closest, true);
-      sidebar.classList.toggle('active', closest < states.collapsed);
     });
 
     // Handle Handle Click for Auto-Move (Desk/Mob compatibility)
@@ -525,10 +525,9 @@
       const matrix = new WebKitCSSMatrix(transform);
       const currentY = matrix.m42;
       const states = getSheetStates();
-      const isCollapsed = currentY > states.collapsed - 60;
-      const target = isCollapsed ? states.expanded : states.collapsed;
+      const isCurrentlyCollapsed = currentY > states.collapsed - 20;
+      const target = isCurrentlyCollapsed ? states.expanded : states.collapsed;
       setSheetPos(target, true);
-      sidebar.classList.toggle('active', target < states.collapsed);
     });
   }
 

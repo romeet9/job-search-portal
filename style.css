@@ -76,6 +76,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text-primary); fo
   padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
   background: var(--surface); flex-shrink: 0;
 }
+.mobile-toggle { display: none; }
 .logo-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .logo-text { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
 .logo-dot { color: var(--text-muted); }
@@ -280,3 +281,46 @@ html, body { height: 100%; background: var(--bg); color: var(--text-primary); fo
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #map { width: 100% !important; height: 100% !important; }
+  
+  #sidebar {
+    position: fixed; top: auto; bottom: 0; left: 0;
+    width: 100% !important; height: 65vh; z-index: 2000;
+    border-right: none; border-top: 1px solid var(--border);
+    transform: translateY(calc(100% - 40px));
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--surface);
+  }
+  #sidebar.active { transform: translateY(0); }
+
+  .mobile-toggle {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 40px; background: var(--surface2);
+    border: none; color: var(--text-primary); cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .mobile-toggle .toggle-icon { font-size: 16px; transition: transform 0.3s ease; }
+  #sidebar.active .toggle-icon { transform: rotate(180deg); }
+
+  .sidebar-header { padding: 12px 20px 10px; }
+  .logo-wrap { margin-bottom: 8px; }
+
+  /* Adjust map-stats for mobile */
+  #map-stats-container {
+    top: auto !important; bottom: 50px !important; left: 10px !important; right: 10px !important;
+    flex-wrap: wrap; gap: 4px;
+    transition: opacity 0.3s ease;
+    width: calc(100% - 20px) !important;
+  }
+  
+  #sidebar.active ~ #map-stats-container {
+    opacity: 0; pointer-events: none;
+  }
+  
+  .stat-pill { font-size: 10px; padding: 4px 10px; background: rgba(0,0,0,0.9); }
+  #map-stat-role { order: -1; width: 100%; }
+}

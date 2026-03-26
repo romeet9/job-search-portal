@@ -400,6 +400,16 @@
   }
 
   // ── Init ──────────────────────────────────────────────────
+  const mobileToggle = document.getElementById('mobile-toggle');
+  const sidebar = document.getElementById('sidebar');
+  if (mobileToggle && sidebar) {
+    mobileToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+      const isExpanded = sidebar.classList.contains('active');
+      mobileToggle.querySelector('.toggle-text').textContent = isExpanded ? 'Close List' : 'View List';
+    });
+  }
+
   loadJobs();
 
 })();

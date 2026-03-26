@@ -3,15 +3,32 @@ const axios = require('axios');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+const supabase = (supabaseUrl && supabaseUrl.startsWith('https://') && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
+if (!supabase) {
+  console.warn('[SUPABASE MISSING] Falling back to local JSON cache. Add valid SUPABASE_URL (starting with https) and SUPABASE_KEY to .env.');
+}
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
-const RAPID_API_KEY = process.env.RAPID_API_KEY;
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+const RAPID_API_KEY = 'e2d172c084msh0ccf954955ecd6fp107de0jsn4af14df2e55f';
 const RAPID_API_HOST = 'jsearch.p.rapidapi.com';
 
 if (!RAPID_API_KEY) {
@@ -20,45 +37,140 @@ if (!RAPID_API_KEY) {
 
 const CITY_COORDS = {
   bengaluru: { lat: 12.9716, lng: 77.5946 },
-  mumbai:    { lat: 19.0760, lng: 72.8777 },
-  hyderabad: { lat: 17.3850, lng: 78.4867 },
-  delhi:     { lat: 28.6139, lng: 77.2090 },
-  pune:      { lat: 18.5204, lng: 73.8567 },
-  chennai:   { lat: 13.0827, lng: 80.2707 },
-  all:       { lat: 20.5937, lng: 78.9629 }
+  mumbai: { lat: 19.0760, lng: 72.8777 },
+  delhi: { lat: 28.6139, lng: 77.2090 }
 };
 
 const CACHE_FILE = path.join(__dirname, 'jobs_cache.json');
-const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+// Strict rule: Fetch once per day per city/role to stay within 200/month limit
 
-function getCache() {
-  if (!fs.existsSync(CACHE_FILE)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
-  } catch (e) {
-    return {};
+async function getCache() {
+  if (supabase) {
+    const { data, error } = await supabase.from('jobs_cache').select('*');
+    if (error) console.error('[Supabase Cache Read Error]', error.message);
+    if (!error && data && data.length > 0) {
+      console.log(`[Supabase Hit] Found ${data.length} entries`);
+      const cache = {};
+      data.forEach(item => cache[item.key] = { date: item.date, data: item.data, timestamp: item.timestamp });
+      return { cache, source: 'Supabase' };
+    }
+  }
+  if (!fs.existsSync(CACHE_FILE)) return { cache: {}, source: 'Local' };
+  try { 
+    const cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
+    return { cache, source: 'Local' };
+  } catch (e) { 
+    return { cache: {}, source: 'Local' }; 
   }
 }
 
-function setCache(cache) {
+async function setCache(cacheKey, date, data) {
+  if (supabase) {
+    const { error } = await supabase.from('jobs_cache').upsert({
+      key: cacheKey,
+      date: date,
+      data: data,
+      timestamp: Date.now()
+    });
+    if (!error) return;
+    console.error('[Supabase Cache Error]', error.message);
+  }
+  const cache = await getCache();
+  cache[cacheKey] = { date, timestamp: Date.now(), data };
   fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2));
+}
+
+const USAGE_FILE = path.join(__dirname, 'usage_stats.json');
+
+async function getUsageStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const defaultStats = { totalJobs: 0, monthlyRequests: 0, dailyRequests: 0, lastDate: today, lastMonth: new Date().getMonth() };
+
+  if (supabase) {
+    const { data, error } = await supabase.from('usage_stats').select('*').eq('id', 1).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116 is 'no rows found'
+       console.error('[Supabase Stats Read Error]', error.message, error.details);
+    }
+    if (!error && data) {
+      let stats = data;
+      // Reset daily
+      if (stats.last_date !== today) {
+        stats.daily_requests = 0;
+        stats.last_date = today;
+      }
+      // Reset monthly
+      if (stats.last_month !== new Date().getMonth()) {
+        stats.monthly_requests = 0;
+        stats.last_month = new Date().getMonth();
+      }
+      return {
+        totalJobs: stats.total_jobs,
+        monthlyRequests: stats.monthly_requests,
+        dailyRequests: stats.daily_requests,
+        lastDate: stats.last_date,
+        lastMonth: stats.last_month
+      };
+    }
+  }
+
+  if (!fs.existsSync(USAGE_FILE)) return defaultStats;
+  try {
+    let stats = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf8'));
+    if (stats.lastDate !== today) { stats.dailyRequests = 0; stats.lastDate = today; }
+    if (stats.lastMonth !== new Date().getMonth()) { stats.monthlyRequests = 0; stats.lastMonth = new Date().getMonth(); }
+    return stats;
+  } catch (e) { return defaultStats; }
+}
+
+async function updateUsageStats(update) {
+  const stats = await getUsageStats();
+  const newStats = { ...stats, ...update };
+  
+  if (supabase) {
+    const { error } = await supabase.from('usage_stats').upsert({
+      id: 1,
+      total_jobs: newStats.totalJobs,
+      monthly_requests: newStats.monthlyRequests,
+      daily_requests: newStats.dailyRequests,
+      last_date: newStats.lastDate,
+      last_month: newStats.lastMonth
+    });
+    if (!error) return newStats;
+    console.error('[Supabase Stats Error]', error.message);
+  }
+
+  fs.writeFileSync(USAGE_FILE, JSON.stringify(newStats, null, 2));
+  return newStats;
 }
 
 app.get('/api/jobs', async (req, res) => {
   const { city = 'all', role = 'Product Designer' } = req.query;
   const cacheKey = `${city.toLowerCase()}_${role.toLowerCase().replace(/\s+/g, '_')}`;
-  
-  // 1. Check Cache
-  const cache = getCache();
-  const cachedEntry = cache[cacheKey];
-  const now = Date.now();
 
-  if (cachedEntry && (now - cachedEntry.timestamp < CACHE_TTL)) {
-    console.log(`[Cache Hit] Serving ${cacheKey} from local storage`);
-    return res.json(cachedEntry.data);
+  // 1. Check Cache
+  const { cache, source } = await getCache();
+  const stats = await getUsageStats();
+  const cachedEntry = cache[cacheKey];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+  const responseWithStats = (data) => ({
+    data,
+    stats: {
+      totalJobs: stats.totalJobs,
+      requestsToday: stats.dailyRequests,
+      requestsMonth: stats.monthlyRequests,
+      dailyLeft: Math.max(0, 3 - stats.dailyRequests),
+      monthlyLeft: Math.max(0, 200 - stats.monthlyRequests)
+    }
+  });
+
+  if (cachedEntry && cachedEntry.date === today) {
+    console.log(`[API CONNECTION CUT] Serving ${cacheKey} for ${today} from ${source}`);
+    return res.json(responseWithStats(cachedEntry.data));
   }
 
-  console.log(`[Cache Miss] Fetching ${cacheKey} from live API`);
+  console.log(`[Cache Miss] Fetching ${cacheKey} for ${today} from live API`);
   const query = `${role} in ${city === 'all' ? 'India' : city + ' India'}`;
 
   try {
@@ -66,7 +178,7 @@ app.get('/api/jobs', async (req, res) => {
       params: {
         query: query,
         page: '1',
-        num_pages: '1',
+        num_pages: '3',
         country: 'in',
         date_posted: 'month'
       },
@@ -78,10 +190,10 @@ app.get('/api/jobs', async (req, res) => {
 
     const jobsData = response.data.data || [];
     const baseCoords = CITY_COORDS[city.toLowerCase()] || CITY_COORDS.all;
-    
+
     // Group by employer
     const companiesMap = {};
-    
+
     jobsData.forEach((job, index) => {
       const employer = job.employer_name || 'Unknown Company';
       if (!companiesMap[employer]) {
@@ -93,7 +205,7 @@ app.get('/api/jobs', async (req, res) => {
         companiesMap[employer] = {
           id: employer.toLowerCase().replace(/[^a-z0-9]/g, '-'),
           name: employer,
-          logoUrl: job.employer_logo,
+          logoUrl: job.employer_logo || `https://logo.clearbit.com/${employer.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '')}.com`,
           logoInitial: employer.slice(0, 2).toUpperCase(),
           city: job.job_city || (city !== 'all' ? city : 'India'),
           cityKey: city.toLowerCase(),
@@ -121,16 +233,16 @@ app.get('/api/jobs', async (req, res) => {
     });
 
     const finalResult = Object.values(companiesMap);
-    
-    // 2. Update Cache
-    const newCache = getCache();
-    newCache[cacheKey] = {
-      timestamp: Date.now(),
-      data: finalResult
-    };
-    setCache(newCache);
 
-    res.json(finalResult);
+    await setCache(cacheKey, today, finalResult);
+
+    const updatedStats = await updateUsageStats({
+      totalJobs: stats.totalJobs + finalResult.length,
+      dailyRequests: stats.dailyRequests + 1,
+      monthlyRequests: stats.monthlyRequests + 1
+    });
+
+    res.json(responseWithStats(finalResult));
   } catch (error) {
     console.error('Error fetching jobs:', error.message);
     res.status(500).json({ error: 'Failed to fetch jobs' });

@@ -42,13 +42,9 @@
     <!-- City tabs -->
     <div class="city-tabs-wrap">
       <div class="city-tabs" id="city-tabs">
-        <button class="city-tab active" data-city="all">All India</button>
-        <button class="city-tab" data-city="bengaluru">Bengaluru</button>
+        <button class="city-tab active" data-city="bengaluru">Bengaluru</button>
         <button class="city-tab" data-city="mumbai">Mumbai</button>
-        <button class="city-tab" data-city="hyderabad">Hyderabad</button>
         <button class="city-tab" data-city="delhi">Delhi NCR</button>
-        <button class="city-tab" data-city="pune">Pune</button>
-        <button class="city-tab" data-city="chennai">Chennai</button>
       </div>
     </div>
 
@@ -59,19 +55,6 @@
       <button id="search-clear" class="search-clear hidden">✕</button>
     </div>
 
-    <!-- Role filters -->
-    <div class="filters-wrap">
-      <div class="filter-label">Filter by role</div>
-      <div class="filter-chips" id="filter-chips">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="Product Designer">Product Designer</button>
-        <button class="chip" data-filter="UI/UX Designer">UI/UX Designer</button>
-        <button class="chip" data-filter="UX Researcher">UX Researcher</button>
-        <button class="chip" data-filter="Design Lead">Design Lead</button>
-        <button class="chip" data-filter="Motion Designer">Motion Designer</button>
-        <button class="chip" data-filter="Visual Designer">Visual Designer</button>
-      </div>
-    </div>
 
     <!-- Back button -->
     <button id="back-btn" class="back-btn hidden">
@@ -91,9 +74,13 @@
 
   </aside>
 
-  <!-- Floating map stat -->
-  <div class="map-overlay top-left" id="map-stats">
-    <span id="map-stat-text">0 roles across India</span>
+  <!-- Floating map stats -->
+  <div class="map-overlay top-left" id="map-stats-container">
+    <div class="stat-pill" id="map-stat-role">0 roles across Bengaluru</div>
+    <div class="stat-pill">Total: <span id="stat-total-jobs">0</span></div>
+    <div class="stat-pill">Today: <span id="stat-today-jobs">0</span></div>
+    <div class="stat-pill">Daily: <span id="stat-daily-left" class="highlight">3</span></div>
+    <div class="stat-pill">Monthly: <span id="stat-monthly-left" class="highlight">200</span></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

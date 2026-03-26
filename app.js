@@ -10,18 +10,14 @@
   const PROXY_URL = 'http://localhost:3000/api/jobs';
 
   const CITY_BOUNDS = {
-    all:       { center: [20.5937, 78.9629], zoom: 5 },
     bengaluru: { center: [12.9716, 77.5946], zoom: 12 },
     mumbai:    { center: [19.0760, 72.8777], zoom: 12 },
-    hyderabad: { center: [17.3850, 78.4867], zoom: 12 },
     delhi:     { center: [28.6139, 77.2090], zoom: 11 },
-    pune:      { center: [18.5204, 73.8567], zoom: 12 },
-    chennai:   { center: [13.0827, 80.2707], zoom: 12 },
   };
 
   // ── State ────────────────────────────────────────────────
   let COMPANIES    = []; 
-  let activeCity   = 'all';
+  let activeCity   = 'bengaluru';
   let activeFilter = 'Product Designer'; // Default to Product Designer
   let searchQuery  = '';
   let selectedId   = null;
@@ -30,8 +26,8 @@
 
   // ── Map ──────────────────────────────────────────────────
   const map = L.map('map', {
-    center: CITY_BOUNDS.all.center,
-    zoom: CITY_BOUNDS.all.zoom,
+    center: CITY_BOUNDS.bengaluru.center,
+    zoom: CITY_BOUNDS.bengaluru.zoom,
     zoomControl: true,
   });
 
@@ -51,8 +47,11 @@
     
     try {
       const resp = await fetch(`${PROXY_URL}?city=${activeCity}&role=${activeFilter}`);
-      const data = await resp.json();
-      COMPANIES = data || [];
+      const result = await resp.json();
+      
+      COMPANIES = result.data || [];
+      updateUsageStatsUI(result.stats);
+      
       selectedId = null;
       showList(); // Reset view to list
       renderAll();
@@ -97,8 +96,9 @@
     const countBadge = jobs.length > 0
       ? `<div class="marker-count">${jobs.length}</div>` : '';
     const inner = company.logoUrl
-      ? `<img src="${company.logoUrl}" alt="${company.name}"
-           onerror="this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'" />`
+      ? `<img src="${company.logoUrl}" alt="${company.name}" 
+           onload="this.parentElement.style.background='white'"
+           onerror="this.parentElement.style.background='var(--surface3)'; this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'" />`
       : `<span class="logo-fallback">${safeInitial(company)}</span>`;
 
     return L.divIcon({
@@ -136,15 +136,21 @@
     });
   }
 
-  // ── Stats ─────────────────────────────────────────────────
+  // ── Usage Stats UI ───────────────────────────────────────
+  function updateUsageStatsUI(stats) {
+    if (!stats) return;
+    document.getElementById('stat-total-jobs').textContent = stats.totalJobs.toLocaleString();
+    document.getElementById('stat-today-jobs').textContent = stats.totalJobs.toLocaleString(); // Simplified for now
+    document.getElementById('stat-daily-left').textContent = stats.dailyLeft;
+    document.getElementById('stat-monthly-left').textContent = stats.monthlyLeft;
+  }
+
   function updateStats() {
     const fc = getFilteredCompanies();
     const totalRoles = fc.reduce((a, c) => a + getVisibleJobs(c).length, 0);
-    document.getElementById('stat-companies').textContent = fc.length;
-    document.getElementById('stat-roles').textContent = totalRoles;
-    const cityLabel = activeCity === 'all' ? 'India' : (fc[0]?.city || activeCity);
-    document.getElementById('map-stat-text').textContent =
-      `${totalRoles} live role${totalRoles !== 1 ? 's' : ''} across ${activeCity === 'all' ? 'India' : cityLabel}`;
+    const cityLabel = fc[0]?.city || activeCity.charAt(0).toUpperCase() + activeCity.slice(1);
+    document.getElementById('map-stat-role').textContent =
+      `${totalRoles} live role${totalRoles !== 1 ? 's' : ''} across ${cityLabel}`;
   }
 
   // ── Company list ──────────────────────────────────────────
@@ -286,18 +292,6 @@
     loadJobs();
   });
 
-  // ── Role filters ──────────────────────────────────────────
-  document.getElementById('filter-chips').addEventListener('click', e => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    if (chip.dataset.filter === activeFilter) return;
-
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    activeFilter = chip.dataset.filter;
-    
-    loadJobs();
-  });
 
   // ── Search ────────────────────────────────────────────────
   const searchInput = document.getElementById('search-input');

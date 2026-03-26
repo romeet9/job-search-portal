@@ -25,7 +25,23 @@
   --transition: 0.18s cubic-bezier(0.4,0,0.2,1);
 }
 
-html, body { height: 100%; background: var(--bg); color: var(--text-primary); font-family: var(--font-body); font-size: 14px; overflow: hidden; }
+html, body { height: 100%; background: var(--surface); color: var(--text-primary); font-family: var(--font-body);
+  overflow: hidden; touch-action: manipulation;
+}
+
+/* ── REFRESH BUTTON ────────────────────────────────────── */
+#refresh-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 50px; height: 50px; border-radius: 50%;
+  background: rgba(15,15,15,0.85); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3000;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#refresh-btn:hover { transform: scale(1.1) rotate(45deg); background: var(--accent); }
+#refresh-btn .refresh-icon { font-size: 24px; }
 
 /* ── MAP ─────────────────────────────────────────────────── */
 #map {
@@ -314,17 +330,19 @@ html, body { height: 100%; background: var(--bg); color: var(--text-primary); fo
 
   /* High-Visibility Stats for Mobile */
   #map-stats-container {
-    top: 20px !important; left: 16px !important; right: 16px !important;
+    top: 16px !important; left: 16px !important; right: auto !important;
     bottom: auto !important; width: auto !important;
-    flex-wrap: wrap; gap: 8px;
-    transition: opacity 0.3s ease;
+    max-width: calc(100% - 32px);
+    flex-direction: column; align-items: flex-start; gap: 6px;
   }
   
   .stat-pill {
-    font-size: 13px !important; padding: 10px 16px !important;
-    background: rgba(10,10,10,0.95); border-color: var(--border-light);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    font-size: 11px !important; padding: 6px 12px !important;
+    background: rgba(10,10,10,0.9); border-color: var(--border-light);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
+  
+  #refresh-btn { bottom: 60px; right: 16px; width: 44px; height: 44px; }
   #map-stat-role { order: -1; width: 100%; font-size: 14px; color: #fff; }
   
   #sidebar.active ~ #map-stats-container {

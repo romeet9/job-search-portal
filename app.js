@@ -24,6 +24,16 @@
   let markers = {}; // id → L.marker
   let isLoading = false;
 
+  function expandSheet(forceFull = false) {
+    if (window.innerWidth > 768) return;
+    const s = document.getElementById('sidebar');
+    const h = window.innerHeight;
+    const targetY = forceFull ? 0 : h * 0.35;
+    s.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    s.style.transform = `translateY(${targetY}px)`;
+    s.classList.add('active');
+  }
+
   function timeAgo(isoString) {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -200,6 +210,7 @@
       marker.on('click', () => {
         showDetail(company.id);
         map.flyTo([company.lat, company.lng], 13, { duration: 0.8 });
+        expandSheet(); // Auto-expand on mobile marker click
       });
       markers[company.id] = marker;
     });
@@ -399,6 +410,18 @@
     renderList();
   }
 
+  // ── Refresh Button ────────────────────────
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      const icon = refreshBtn.querySelector('.refresh-icon');
+      icon.style.animation = 'spin 0.7s linear infinite';
+      loadJobs().finally(() => {
+        setTimeout(() => icon.style.animation = '', 500);
+      });
+    });
+  }
+
   // ── Mobile Draggable Bottom Sheet ────────────────────────
   const sidebar = document.getElementById('sidebar');
   const dragHandle = document.querySelector('.drag-handle');
@@ -407,13 +430,13 @@
     let startY = 0;
     let startTranslateY = 0;
     let isDragging = false;
+    let startTime = 0;
     
-    // Percentages of window height
     const getSheetStates = () => {
       const h = window.innerHeight;
       return {
         collapsed: h - 48,
-        expanded: h * 0.35, // 65% height
+        expanded: h * 0.35,
         full: 0
       };
     };
@@ -427,21 +450,23 @@
       if (window.innerWidth > 768) return;
       isDragging = true;
       startY = e.touches[0].clientY;
+      startTime = Date.now();
       
-      // Get current translation from style or computed
       const transform = window.getComputedStyle(sidebar).transform;
       const matrix = new WebKitCSSMatrix(transform);
       startTranslateY = matrix.m42;
       
       setSheetPos(startTranslateY, false);
-      e.preventDefault(); // Prevent scroll/refresh
+      e.preventDefault();
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
       if (!isDragging) return;
+      const states = getSheetStates();
       const currentY = e.touches[0].clientY;
       const deltaY = currentY - startY;
-      const newY = Math.max(0, startTranslateY + deltaY);
+      // CLAMP: Prevent going below collapsed or above top
+      const newY = Math.min(states.collapsed, Math.max(0, startTranslateY + deltaY));
       setSheetPos(newY, false);
       e.preventDefault();
     }, { passive: false });
@@ -449,20 +474,40 @@
     window.addEventListener('touchend', (e) => {
       if (!isDragging) return;
       isDragging = false;
+      const duration = Date.now() - startTime;
       
       const transform = window.getComputedStyle(sidebar).transform;
       const matrix = new WebKitCSSMatrix(transform);
       const endY = matrix.m42;
-      
       const states = getSheetStates();
       
-      // Snap to closest state
+      // Handle Tap on handle: Toggle between states
+      if (duration < 250 && Math.abs(endY - startTranslateY) < 15) {
+        const target = endY > states.expanded + 50 ? states.expanded : states.collapsed;
+        setSheetPos(target, true);
+        sidebar.classList.toggle('active', target < states.collapsed);
+        return;
+      }
+      
+      // Snap to closest
       let closest = states.collapsed;
       if (Math.abs(endY - states.expanded) < Math.abs(endY - closest)) closest = states.expanded;
       if (Math.abs(endY - states.full) < Math.abs(endY - closest)) closest = states.full;
       
       setSheetPos(closest, true);
       sidebar.classList.toggle('active', closest < states.collapsed);
+    });
+
+    // Handle Handle Click for Auto-Move (Desk/Mob compatibility)
+    dragHandle.addEventListener('click', () => {
+      if (window.innerWidth > 768) return;
+      const transform = window.getComputedStyle(sidebar).transform;
+      const matrix = new WebKitCSSMatrix(transform);
+      const currentY = matrix.m42;
+      const states = getSheetStates();
+      const target = currentY > states.expanded + 50 ? states.expanded : states.collapsed;
+      setSheetPos(target, true);
+      sidebar.classList.toggle('active', target < states.collapsed);
     });
   }
 

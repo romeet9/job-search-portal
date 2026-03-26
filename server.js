@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
+const BRANDFETCH_KEY = process.env.BRANDFETCH_KEY;
 
 const supabase = (supabaseUrl && supabaseUrl.startsWith('https://') && supabaseKey) 
   ? createClient(supabaseUrl, supabaseKey)
@@ -28,11 +29,13 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const RAPID_API_KEY = 'e2d172c084msh0ccf954955ecd6fp107de0jsn4af14df2e55f';
+const RAPID_API_KEY = process.env.RAPID_API_KEY || 'e2d172c084msh0ccf954955ecd6fp107de0jsn4af14df2e55f';
 const RAPID_API_HOST = 'jsearch.p.rapidapi.com';
 
 if (!RAPID_API_KEY) {
   console.warn('WARNING: RAPID_API_KEY is not defined in .env file.');
+} else {
+  console.log(`[RAPID_API] Using key starting with: ${RAPID_API_KEY.slice(0, 4)}...`);
 }
 
 const CITY_COORDS = {
@@ -42,6 +45,16 @@ const CITY_COORDS = {
 };
 
 const CACHE_FILE = path.join(__dirname, 'jobs_cache.json');
+
+function getLogoUrl(employer) {
+  const domain = employer.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '') + '.com';
+  // 1. Prioritize Brandfetch if key is available (480p/720p)
+  if (BRANDFETCH_KEY) {
+    return `https://cdn.brandfetch.io/${domain}/logo?c=${BRANDFETCH_KEY}`;
+  }
+  // 2. Default to Clearbit at 512px (Retina Quality)
+  return `https://logo.clearbit.com/${domain}?size=500`;
+}
 // Strict rule: Fetch once per day per city/role to stay within 200/month limit
 
 async function getCache() {
@@ -205,7 +218,7 @@ app.get('/api/jobs', async (req, res) => {
         companiesMap[employer] = {
           id: employer.toLowerCase().replace(/[^a-z0-9]/g, '-'),
           name: employer,
-          logoUrl: job.employer_logo || `https://logo.clearbit.com/${employer.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '')}.com`,
+          logoUrl: job.employer_logo || getLogoUrl(employer),
           logoInitial: employer.slice(0, 2).toUpperCase(),
           city: job.job_city || (city !== 'all' ? city : 'India'),
           cityKey: city.toLowerCase(),
@@ -244,6 +257,9 @@ app.get('/api/jobs', async (req, res) => {
 
     res.json(responseWithStats(finalResult));
   } catch (error) {
+    if (error.response && error.response.data) {
+      console.error('RapidAPI Error Detail:', error.response.data);
+    }
     console.error('Error fetching jobs:', error.message);
     res.status(500).json({ error: 'Failed to fetch jobs' });
   }

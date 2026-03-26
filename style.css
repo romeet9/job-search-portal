@@ -79,9 +79,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text-primary); fo
 .logo-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .logo-text { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
 .logo-dot { color: var(--text-muted); }
-.stats-row { display: flex; gap: 8px; }
-.stat-chip { font-size: 11px; font-weight: 500; color: var(--text-secondary); background: var(--surface3); border: 1px solid var(--border); border-radius: 30px; padding: 4px 10px; }
-.stat-chip span { color: var(--text-primary); font-weight: 700; }
+
 
 
 .city-tabs { display: flex; gap: 0; padding: 0 4px; white-space: nowrap; }

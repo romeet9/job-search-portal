@@ -46,13 +46,49 @@ const CITY_COORDS = {
 
 const CACHE_FILE = path.join(__dirname, 'jobs_cache.json');
 
-function getLogoUrl(employer) {
-  const domain = employer.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '') + '.com';
-  // 1. Prioritize Brandfetch if key is available (480p/720p)
+const LOGO_MAPPINGS = {
+  'tata digital': 'tatadigital.com',
+  'tata consultancy services': 'tcs.com',
+  'reliance industries': 'ril.com',
+  'zomato': 'zomato.com',
+  'swiggy': 'swiggy.com',
+  'ola': 'olacabs.com',
+  'razorpay': 'razorpay.com',
+  'paytm': 'paytm.com',
+  'flipkart': 'flipkart.com',
+  'phonepe': 'phonepe.com',
+  'cred': 'cred.club',
+  'adobe': 'adobe.com',
+  'google': 'google.com',
+  'apple': 'apple.com',
+  'microsoft': 'microsoft.com'
+};
+
+function extractDomain(url, employer) {
+  if (url) {
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.replace('www.', '');
+      // If it's a generic job board, ignore it
+      const boards = ['linkedin.com', 'glassdoor.com', 'indeed.com', 'naukri.com', 'lever.co', 'greenhouse.io', 'ashbyhq.com'];
+      if (!boards.some(b => hostname.includes(b))) {
+        return hostname;
+      }
+    } catch (e) {}
+  }
+  const cleanName = employer.toLowerCase().trim();
+  if (LOGO_MAPPINGS[cleanName]) return LOGO_MAPPINGS[cleanName];
+  
+  // Last resort heuristic
+  return employer.toLowerCase().split(' ')[0].replace(/[^a-z0-9]/g, '') + '.com';
+}
+
+function getLogoUrl(domain) {
+  // 1. Prioritize Brandfetch if key is available
   if (BRANDFETCH_KEY) {
     return `https://cdn.brandfetch.io/${domain}/logo?c=${BRANDFETCH_KEY}`;
   }
-  // 2. Default to Clearbit at 512px (Retina Quality)
+  // 2. Clearbit at 512px
   return `https://logo.clearbit.com/${domain}?size=500`;
 }
 // Strict rule: Fetch once per day per city/role to stay within 200/month limit
@@ -215,10 +251,13 @@ app.get('/api/jobs', async (req, res) => {
         const lat = baseCoords.lat + (Math.random() - 0.5) * offset * 2;
         const lng = baseCoords.lng + (Math.random() - 0.5) * offset * 2;
 
+        const domain = extractDomain(job.job_apply_link, employer);
+
         companiesMap[employer] = {
           id: employer.toLowerCase().replace(/[^a-z0-9]/g, '-'),
           name: employer,
-          logoUrl: job.employer_logo || getLogoUrl(employer),
+          logoUrl: job.employer_logo || getLogoUrl(domain),
+          domain: domain,
           logoInitial: employer.slice(0, 2).toUpperCase(),
           city: job.job_city || (city !== 'all' ? city : 'India'),
           cityKey: city.toLowerCase(),
@@ -241,7 +280,8 @@ app.get('/api/jobs', async (req, res) => {
         skills: [], // Would need NLP to extract reliably
         source: job.job_publisher || 'JSearch',
         applyUrl: job.job_apply_link,
-        applyLabel: `Apply on ${job.job_publisher || 'Original Site'}`
+        applyLabel: `Apply on ${job.job_publisher || 'Original Site'}`,
+        postedAt: job.job_posted_at_datetime_utc
       });
     });
 

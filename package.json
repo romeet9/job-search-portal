@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "node server.js",
+    "build": "echo 'Build complete: Front-end is static, back-end is running locally.'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

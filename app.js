@@ -7,7 +7,7 @@
   'use strict';
 
   // ── Config ───────────────────────────────────────────────
-  const PROXY_URL = 'http://localhost:3000/api/jobs';
+  const PROXY_URL = '/api/jobs';
 
   const CITY_BOUNDS = {
     bengaluru: { center: [12.9716, 77.5946], zoom: 12 },
@@ -23,6 +23,75 @@
   let selectedId   = null;
   let markers = {}; // id → L.marker
   let isLoading = false;
+
+  function timeAgo(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    if (diffInSeconds < 60) return 'Just now';
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+
+  // ── Logo Adaptive Contrast ──────────────────────────────
+  window.analyzeLogo = function(img) {
+    const container = img.parentElement;
+    if (!container) return;
+    
+    // Clearbit/Brandfetch might block canvas via CORS, so we use a try-catch
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 10; canvas.height = 10;
+      
+      // We need crossOrigin set to anonymous for this to work with remote images
+      // but only if the server allows it. Clearbit usually does.
+      img.crossOrigin = "Anonymous";
+
+      ctx.drawImage(img, 0, 0, 10, 10);
+      const data = ctx.getImageData(0, 0, 10, 10).data;
+      
+      let r = 0, g = 0, b = 0, count = 0;
+      let hasTransparency = false;
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] > 20) { // Visible pixel
+          r += data[i]; g += data[i + 1]; b += data[i + 2];
+          count++;
+        } else {
+          hasTransparency = true;
+        }
+      }
+
+      if (count === 0) {
+        container.style.background = 'var(--surface3)';
+        return;
+      }
+
+      const avg = (r + g + b) / (count * 3);
+      
+      // User Logic: 
+      // White/Light Logo -> Black Background
+      // Black/Dark Logo -> White Background
+      if (avg > 180) { 
+        container.style.background = '#0b0b0b'; 
+      } else if (avg < 110) { 
+        container.style.background = '#ffffff'; 
+      } else {
+        container.style.background = '#f8f8f8'; // Default high-clarity background
+      }
+    } catch (e) {
+      // If canvas is tainted/blocked, default to a high-contrast white bg for logos
+      container.style.background = '#ffffff';
+    }
+  };
 
   // ── Map ──────────────────────────────────────────────────
   const map = L.map('map', {
@@ -96,9 +165,9 @@
     const countBadge = jobs.length > 0
       ? `<div class="marker-count">${jobs.length}</div>` : '';
     const inner = company.logoUrl
-      ? `<img src="${company.logoUrl}" alt="${company.name}" 
-           onload="this.parentElement.style.background='white'"
-           onerror="this.parentElement.style.background='var(--surface3)'; this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'" />`
+      ? `<img src="${company.logoUrl}" alt="${company.name}" crossorigin="anonymous"
+           onload="analyzeLogo(this)"
+           onerror="if(!this.src.includes('google.com')){ this.src='https://www.google.com/s2/favicons?domain='+('${company.domain || ''}')+'&sz=128'; } else { this.parentElement.style.background='var(--surface3)'; this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'; }" />`
       : `<span class="logo-fallback">${safeInitial(company)}</span>`;
 
     return L.divIcon({
@@ -177,8 +246,9 @@
       card.style.animationDelay = `${Math.min(i * 25, 200)}ms`;
 
       const logoHtml = company.logoUrl
-        ? `<img src="${company.logoUrl}" alt="${company.name}"
-             onerror="this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'" />`
+        ? `<img src="${company.logoUrl}" alt="${company.name}" crossorigin="anonymous"
+             onload="analyzeLogo(this)"
+             onerror="if(!this.src.includes('google.com')){ this.src='https://www.google.com/s2/favicons?domain='+('${company.domain || ''}')+'&sz=128'; } else { this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'; }" />`
         : `<span class="logo-fallback">${safeInitial(company)}</span>`;
 
       const rolesHtml = jobs.slice(0, 2).map(j =>
@@ -219,8 +289,9 @@
 
     const jobs = getVisibleJobs(company);
     const logoHtml = company.logoUrl
-      ? `<img src="${company.logoUrl}" alt="${company.name}"
-           onerror="this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'" />`
+      ? `<img src="${company.logoUrl}" alt="${company.name}" crossorigin="anonymous"
+           onload="analyzeLogo(this)"
+           onerror="if(!this.src.includes('google.com')){ this.src='https://www.google.com/s2/favicons?domain='+('${company.domain || ''}')+'&sz=128'; } else { this.outerHTML='<span class=\\'logo-fallback\\'>${safeInitial(company)}</span>'; }" />`
       : `<span class="logo-fallback">${safeInitial(company)}</span>`;
 
     const jobCardsHtml = jobs.map(job => {
@@ -231,6 +302,7 @@
             <span class="job-badge exp">⏱ ${job.experience || 'Not specified'}</span>
             <span class="job-badge">${job.type}</span>
             <span class="job-badge">${job.mode}</span>
+            <span class="job-badge source">🗓 ${timeAgo(job.postedAt)}</span>
             <span class="job-badge source">⚡ ${job.source}</span>
           </div>
           <a class="job-link" href="${job.applyUrl}" target="_blank" rel="noopener noreferrer">

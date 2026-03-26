@@ -11,8 +11,12 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-const RAPID_API_KEY = '1998a180b8msh0af4c8f2452816fp1d70ebjsne4813048b27b';
+const RAPID_API_KEY = process.env.RAPID_API_KEY;
 const RAPID_API_HOST = 'jsearch.p.rapidapi.com';
+
+if (!RAPID_API_KEY) {
+  console.warn('WARNING: RAPID_API_KEY is not defined in .env file.');
+}
 
 const CITY_COORDS = {
   bengaluru: { lat: 12.9716, lng: 77.5946 },

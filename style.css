@@ -276,6 +276,31 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
 }
 .company-card { animation: fadeSlideIn 0.2s ease both; }
 
+/* ── REFRESH BUTTON ────────────────────────────────────── */
+#refresh-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--surface2); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3000;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#refresh-btn:active { transform: scale(0.9); }
+#refresh-btn svg { width: 24px; height: 24px; transition: transform 0.6s ease; }
+
+/* Luxury Backdrop Blur Overlay */
+#backdrop-blur {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.2);
+  backdrop-filter: blur(0px); z-index: 1500;
+  pointer-events: none; opacity: 0;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#sidebar.active ~ #backdrop-blur {
+  backdrop-filter: blur(12px); opacity: 1; pointer-events: auto;
+}
+
 /* ── Loading Overlay ────────────────────────────────────────── */
 #loading-overlay {
   position: absolute;
@@ -302,28 +327,48 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
 @media (max-width: 768px) {
   #map { width: 100% !important; height: 100% !important; }
   
+  /* Animated Map Controls */
+  .leaflet-control-zoom {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  #sidebar.active ~ #map .leaflet-control-zoom,
+  #sidebar.active + #map .leaflet-control-zoom {
+    transform: translateY(-40px) !important;
+  }
+
+  /* Specific bottom controls if any */
+  .leaflet-bottom {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  #sidebar.active ~ #map .leaflet-bottom {
+    transform: translateY(-50vh) !important;
+  }
+
   #sidebar {
     position: fixed; top: auto; bottom: 0; left: 0;
     width: 100% !important; height: 85vh; z-index: 2000;
     border-right: none; border-top: 1px solid var(--border);
-    /* Start collapsed: 40px showing (the handle) */
+    /* Start collapsed: 48px showing (the handle) */
     transform: translateY(calc(100% - 48px)); 
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     background: var(--surface);
-    touch-action: none; /* Critical for custom drag logic */
+    touch-action: none;
     display: flex; flex-direction: column;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
   }
   
   /* Drag handle visual */
   .drag-handle {
     display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 48px; background: var(--surface2);
+    width: 100%; height: 48px; background: var(--surface);
     border-bottom: 1px solid var(--border); cursor: grab; flex-shrink: 0;
   }
   .drag-handle::after {
-    content: ''; width: 40px; height: 4px;
-    background: var(--text-muted); border-radius: 4px;
+    content: ''; width: 42px; height: 5px;
+    background: var(--border); border-radius: 4px;
+    transition: background 0.3s ease;
   }
+  #sidebar.active .drag-handle::after { background: var(--accent); }
 
   .sidebar-header { padding: 12px 20px 10px; }
   .logo-wrap { margin-bottom: 8px; }

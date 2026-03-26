@@ -29,7 +29,7 @@
     const s = document.getElementById('sidebar');
     const h = window.innerHeight;
     const targetY = forceFull ? 0 : h * 0.35;
-    s.style.transition = 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    s.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
     s.style.transform = `translateY(${targetY}px)`;
     s.classList.add('active');
   }
@@ -410,15 +410,25 @@
     renderList();
   }
 
-  // ── Refresh Button ────────────────────────
+  // ── Refresh Button (Hard Reload) ──────────
   const refreshBtn = document.getElementById('refresh-btn');
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
-      const icon = refreshBtn.querySelector('.refresh-icon');
-      icon.style.animation = 'spin 0.7s linear infinite';
-      loadJobs().finally(() => {
-        setTimeout(() => icon.style.animation = '', 500);
-      });
+      // Luxury animation before reload
+      refreshBtn.style.transform = 'scale(0.8) rotate(180deg)';
+      refreshBtn.style.opacity = '0.5';
+      setTimeout(() => window.location.reload(), 300);
+    });
+  }
+
+  // ── Backdrop Blur Dismissal ────────────────
+  const backdropBlur = document.getElementById('backdrop-blur');
+  if (backdropBlur) {
+    backdropBlur.addEventListener('click', () => {
+      if (window.innerWidth > 768) return;
+      const states = getSheetStates();
+      setSheetPos(states.collapsed, true);
+      sidebar.classList.remove('active');
     });
   }
 
@@ -442,7 +452,7 @@
     };
 
     const setSheetPos = (y, animate = false) => {
-      sidebar.style.transition = animate ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
+      sidebar.style.transition = animate ? 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
       sidebar.style.transform = `translateY(${y}px)`;
     };
 
@@ -468,6 +478,15 @@
       // CLAMP: Prevent going below collapsed or above top
       const newY = Math.min(states.collapsed, Math.max(0, startTranslateY + deltaY));
       setSheetPos(newY, false);
+      
+      // Dynamic Blur Effect based on height
+      const progress = 1 - (newY / states.collapsed);
+      const blurOverlay = document.getElementById('backdrop-blur');
+      if (blurOverlay) {
+        blurOverlay.style.opacity = progress;
+        blurOverlay.style.pointerEvents = progress > 0.1 ? 'auto' : 'none';
+      }
+      
       e.preventDefault();
     }, { passive: false });
 
@@ -483,7 +502,8 @@
       
       // Handle Tap on handle: Toggle between states
       if (duration < 250 && Math.abs(endY - startTranslateY) < 15) {
-        const target = endY > states.expanded + 50 ? states.expanded : states.collapsed;
+        const isCollapsed = endY > states.collapsed - 60;
+        const target = isCollapsed ? states.expanded : states.collapsed;
         setSheetPos(target, true);
         sidebar.classList.toggle('active', target < states.collapsed);
         return;
@@ -505,7 +525,8 @@
       const matrix = new WebKitCSSMatrix(transform);
       const currentY = matrix.m42;
       const states = getSheetStates();
-      const target = currentY > states.expanded + 50 ? states.expanded : states.collapsed;
+      const isCollapsed = currentY > states.collapsed - 60;
+      const target = isCollapsed ? states.expanded : states.collapsed;
       setSheetPos(target, true);
       sidebar.classList.toggle('active', target < states.collapsed);
     });

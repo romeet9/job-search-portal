@@ -444,7 +444,7 @@
       const h = window.innerHeight;
       return {
         collapsed: h - 48,
-        expanded: h * 0.35,
+        expanded: h * 0.4,
         full: 0
       };
     };
@@ -453,9 +453,13 @@
       sidebar.style.transition = animate ? 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)' : 'none';
       sidebar.style.transform = `translateY(${y}px)`;
       
-      // Luxury Dynamic Blur & Map Shift
       const states = getSheetStates();
-      const progress = Math.max(0, Math.min(1, 1 - (y / states.collapsed)));
+      // Ensure we NEVER exceed collapsed bound (vanishing point)
+      const clampedY = Math.min(states.collapsed, y);
+      if (clampedY !== y) sidebar.style.transform = `translateY(${clampedY}px)`;
+
+      // Luxury Dynamic Blur & Map Shift
+      const progress = Math.max(0, Math.min(1, 1 - (clampedY / states.collapsed)));
       const blurOverlay = document.getElementById('backdrop-blur');
       if (blurOverlay) {
         blurOverlay.style.opacity = progress;
@@ -463,8 +467,7 @@
         blurOverlay.style.backdropFilter = `blur(${progress * 12}px)`;
       }
       
-      // Sync body class for CSS-only Luxury effects
-      document.body.classList.toggle('sidebar-active', y < states.collapsed - 10);
+      document.body.classList.toggle('sidebar-active', clampedY < states.collapsed - 10);
     };
 
     dragHandle.addEventListener('touchstart', (e) => {
@@ -504,7 +507,7 @@
       
       // Handle Tap on handle: Toggle between states
       if (duration < 250 && Math.abs(endY - startTranslateY) < 15) {
-        const isCurrentlyCollapsed = endY > states.collapsed - 20;
+        const isCurrentlyCollapsed = endY > states.collapsed - 30;
         const target = isCurrentlyCollapsed ? states.expanded : states.collapsed;
         setSheetPos(target, true);
         return;
@@ -518,17 +521,21 @@
       setSheetPos(closest, true);
     });
 
-    // Handle Handle Click for Auto-Move (Desk/Mob compatibility)
-    dragHandle.addEventListener('click', () => {
+    // Handle Handle/Header Click for Auto-Move (Desk/Mob compatibility)
+    const toggleSheet = () => {
       if (window.innerWidth > 768) return;
       const transform = window.getComputedStyle(sidebar).transform;
       const matrix = new WebKitCSSMatrix(transform);
       const currentY = matrix.m42;
       const states = getSheetStates();
-      const isCurrentlyCollapsed = currentY > states.collapsed - 20;
+      const isCurrentlyCollapsed = currentY > states.collapsed - 30;
       const target = isCurrentlyCollapsed ? states.expanded : states.collapsed;
       setSheetPos(target, true);
-    });
+    };
+
+    dragHandle.addEventListener('click', toggleSheet);
+    const sidebarHeader = document.querySelector('.sidebar-header');
+    if (sidebarHeader) sidebarHeader.addEventListener('click', toggleSheet);
   }
 
   loadJobs();

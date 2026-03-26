@@ -344,16 +344,16 @@ html, body { height: 100%; background: var(--surface); color: var(--text-primary
   }
 
   #sidebar {
-    position: fixed; top: auto; bottom: 0; left: 0;
-    width: 100% !important; height: 85vh; z-index: 2000;
+    position: fixed; top: 0; bottom: 0; left: 0;
+    width: 100% !important; height: 100vh !important; z-index: 2000;
     border-right: none; border-top: 1px solid var(--border);
-    /* Start collapsed: 48px showing (the handle) */
+    /* Start collapsed: 48px handle showing at the bottom */
     transform: translateY(calc(100% - 48px)); 
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     background: var(--surface);
     touch-action: none;
     display: flex; flex-direction: column;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
   }
   
   /* Drag handle visual */

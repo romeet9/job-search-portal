@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">designjobs-india</string>
+    <string name="title_activity_main">designjobs-india</string>
+    <string name="package_name">com.designjobs.com</string>
+    <string name="custom_url_scheme">com.designjobs.com</string>
+</resources>

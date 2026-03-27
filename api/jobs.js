@@ -153,12 +153,9 @@ module.exports = async (req, res) => {
     const finalResult = Object.values(companiesMap);
 
     res.json({
-      status: 'success',
       data: finalResult,
-      usage: {
+      stats: {
         totalJobs: stats.totalJobs,
-        requestsToday: stats.dailyRequests,
-        requestsMonth: stats.monthlyRequests,
         dailyLeft: Math.max(0, 3 - stats.dailyRequests),
         monthlyLeft: Math.max(0, 200 - stats.monthlyRequests)
       }

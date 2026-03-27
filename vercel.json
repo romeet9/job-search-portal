@@ -1,11 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "package.json", "use": "@vercel/static-build" },
-    { "src": "api/jobs.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/jobs", "dest": "/api/jobs.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
   ]
 }

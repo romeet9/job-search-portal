@@ -1,20 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DesignJobs India — Product Design & UI/UX Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <meta name="theme-color" content="#0a0a0a" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="/pwa-512x512.png" />
-  </head>
-  <body class="bg-surface text-text-primary antialiased font-sans">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DesignJobs India — Product Design & UI/UX Map</title>
+  <meta name="description" content="Discover Product Design and UI/UX job openings across India on an interactive map. Find your next design role at top Indian companies." />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="backdrop-blur"></div>
+
+  <!-- Floating Refresh (Mobile/Desktop) -->
+  <button id="refresh-btn" title="Reload Platform">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+    </svg>
+  </button>
+
+  <!-- Scripts -->
+  <div id="map"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <!-- Drag Handle for Mobile -->
+    <div class="drag-handle"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+      <div class="spinner"></div>
+      <p>Fetching live jobs...</p>
+    </div>
+
+    <!-- Header -->
+    <div class="sidebar-header">
+      <div class="logo-wrap">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="11" r="10" stroke="#fff" stroke-width="1.5"/>
+          <path d="M7 11 L11 7 L15 11 L11 15 Z" fill="#fff"/>
+        </svg>
+        <span class="logo-text">DesignJobs<span class="logo-dot">.</span>in</span>
+      </div>
+    </div>
+
+    <!-- City tabs -->
+    <div class="city-tabs-wrap">
+      <div class="city-tabs" id="city-tabs">
+        <button class="city-tab active" data-city="bengaluru">Bengaluru</button>
+        <button class="city-tab" data-city="mumbai">Mumbai</button>
+        <button class="city-tab" data-city="delhi">Delhi NCR</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input id="search-input" type="text" placeholder="Search companies, roles, skills…" autocomplete="off" />
+      <button id="search-clear" class="search-clear hidden">✕</button>
+    </div>
+
+
+    <!-- Back button -->
+    <button id="back-btn" class="back-btn hidden">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to all companies
+    </button>
+
+    <!-- List view -->
+    <div id="list-view">
+      <div id="company-list"></div>
+    </div>
+
+    <!-- Detail view -->
+    <div id="detail-view" class="hidden">
+      <div id="company-detail"></div>
+    </div>
+
+  </aside>
+
+  <!-- Floating map stats -->
+  <div class="map-overlay top-left" id="map-stats-container">
+    <div class="stat-pill" id="map-stat-role">0 roles across Bengaluru</div>
+    <div class="stat-pill">Total: <span id="stat-total-jobs">0</span></div>
+    <div class="stat-pill">Today: <span id="stat-today-jobs">0</span></div>
+    <div class="stat-pill">Daily: <span id="stat-daily-left" class="highlight">3</span></div>
+    <div class="stat-pill">Monthly: <span id="stat-monthly-left" class="highlight">200</span></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
 </html>

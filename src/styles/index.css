@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-text-primary overflow-hidden selection:bg-white/20;
+  }
+}
+
+/* Custom Utilities */
+.glass {
+  @apply bg-surface2/80 backdrop-blur-xl border border-white/10;
+}
+
+.luxury-shadow {
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+/* Leaflet Customizations */
+.leaflet-container {
+  background: #0a0a0a !important;
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-control-zoom {
+  @apply !border-white/10 !rounded-xl !overflow-hidden !shadow-2xl !mt-4 !ml-4;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  @apply !bg-surface3/80 !text-white !border-none !backdrop-blur-lg hover:!bg-white/10 !transition-colors !w-10 !h-10 !flex !items-center !justify-center !text-lg !font-light;
+}
+
+.leaflet-bar a:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+.leaflet-bar a:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* Custom Marker Styling */
+.custom-marker {
+  @apply transition-transform duration-300;
+}
+.custom-marker:hover {
+  transform: translateY(-5px) scale(1.1);
+}

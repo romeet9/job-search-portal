@@ -60,7 +60,7 @@
     <!-- Search -->
     <div class="search-wrap">
       <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      <input id="search-input" type="text" placeholder="Search companies, roles, skills…" autocomplete="off" />
+      <input id="search-input" type="text" placeholder="Filter by company or keyword…" autocomplete="off" />
       <button id="search-clear" class="search-clear hidden">✕</button>
     </div>
 
@@ -90,6 +90,22 @@
     <div class="stat-pill">Today: <span id="stat-today-jobs">0</span></div>
     <div class="stat-pill">Daily: <span id="stat-daily-left" class="highlight">3</span></div>
     <div class="stat-pill">Monthly: <span id="stat-monthly-left" class="highlight">200</span></div>
+  </div>
+  
+  <div id="floating-role-search">
+    <div class="search-wrap">
+      <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input id="role-search-input" type="text" placeholder="Search any role (e.g. DevOps)..." autocomplete="off" />
+    </div>
+    <div class="filters-wrap">
+      <div class="filter-chips" id="role-chips">
+        <button class="chip active" data-role="Product Designer">Design</button>
+        <button class="chip" data-role="Frontend Developer">Frontend</button>
+        <button class="chip" data-role="Backend Developer">Backend</button>
+        <button class="chip" data-role="Software Engineer">Engineering</button>
+        <button class="chip" data-role="Product Manager">Management</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

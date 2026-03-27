@@ -7,14 +7,15 @@ export default function LuxuryDrawer({ jobs, selectedJobId, onClose }) {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: selectedJobId ? "0%" : "calc(100% - 60px)" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        initial={{ y: "90%" }}
+        animate={{ y: selectedJobId ? "0%" : "90%" }}
+        transition={{ type: "spring", damping: 30, stiffness: 200 }}
         drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.1}
+        dragConstraints={{ top: 0, bottom: window.innerHeight }}
+        dragElastic={0.05}
         onDragEnd={(_, info) => {
           if (info.offset.y > 100) onClose();
+          else if (info.offset.y < -100) setSelectedJobId(jobs[0]?.id); // Auto-expand if dragged up
         }}
         className="fixed bottom-0 left-0 right-0 h-[85vh] glass luxury-shadow rounded-t-3xl z-[3000] flex flex-col overflow-hidden"
       >

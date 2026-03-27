@@ -152,20 +152,17 @@ module.exports = async (req, res) => {
 
     const finalResult = Object.values(companiesMap);
 
-    // 3. Update Cache & Stats
-    if (supabase) {
-      await supabase.from('jobs_cache').upsert({ key: cacheKey, date: today, data: finalResult, timestamp: Date.now() });
-      await supabase.from('usage_stats').upsert({
-        id: 1,
-        total_jobs: stats.totalJobs + finalResult.length,
-        monthly_requests: stats.monthlyRequests + 1,
-        daily_requests: stats.dailyRequests + 1,
-        last_date: today,
-        last_month: now.getMonth()
-      });
-    }
-
-    res.json(responseWithStats(finalResult));
+    res.json({
+      status: 'success',
+      data: finalResult,
+      usage: {
+        totalJobs: stats.totalJobs,
+        requestsToday: stats.dailyRequests,
+        requestsMonth: stats.monthlyRequests,
+        dailyLeft: Math.max(0, 3 - stats.dailyRequests),
+        monthlyLeft: Math.max(0, 200 - stats.monthlyRequests)
+      }
+    });
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).json({ error: 'Failed to fetch jobs' });
